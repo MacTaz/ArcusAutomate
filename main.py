@@ -34,7 +34,7 @@ APPLICANT_PROFILE = {
     "position": "Corporate Secretary",
     "department": "SOIT",
     "courseSection": "BSCS - 3",
-    "contactNo": "09770232108",
+    "contactNo": "09457786367",
     "organizationName": "AWS Student Builder Group - Arcus",
 }
  
