@@ -83,8 +83,11 @@ def extract_proposal(pdf_path: str) -> dict:
         data["objectives"] = []
 
     # ---- PEO write-up ----
+    # Heading wording can vary slightly ("Program Education Objective (PEO)"
+    # vs "Program Education Objective/s (PEO) Satisfied"), so match loosely
+    # up to end-of-line rather than the exact heading text.
     peo_match = re.search(
-        r"Program Education Objective \(PEO\)\s*(.+?)\n\s*Mapúa Core Values",
+        r"Program Education Objective.*?\(PEO\).*?\n(.+?)\n\s*Mapúa Core Values",
         full_text, re.DOTALL
     )
     data["peoWriteup"] = re.sub(r"\s+", " ", peo_match.group(1)).strip() if peo_match else None
@@ -97,22 +100,47 @@ def extract_proposal(pdf_path: str) -> dict:
     data["coreValuesWriteup"] = re.sub(r"\s+", " ", core_values_match.group(1)).strip() if core_values_match else None
 
     # ---- AV Equipment table + Room ----
+    # The table has a merged title row above the real header (e.g.
+    # ['AV Equipment', None] before ['Item', 'Quantity']), and the Room
+    # value lives as extra rows in this SAME table (a ['Room', None] marker
+    # row followed by a row whose first cell is the room name) rather than
+    # as a separate table or plain text. We scan every row rather than
+    # assuming table[0] is the header, since that title row shifts things
+    # down by one.
     equipment = []
+    room = None
     for page_tables in tables_by_page:
         for table in page_tables:
-            if not table or not table[0]:
+            if not table:
                 continue
-            header = [c.strip() if c else "" for c in table[0]]
-            if "Item" in header and "Quantity" in header:
-                for row in table[1:]:
-                    if row and row[0]:
-                        item, qty = row[0].strip(), (row[1] or "").strip()
-                        if item and qty.isdigit():
-                            equipment.append({"item": item, "quantity": int(qty)})
-    data["avEquipment"] = equipment
+            header_idx = None
+            for i, row in enumerate(table):
+                cells = [c.strip() if c else "" for c in row]
+                if "Item" in cells and "Quantity" in cells:
+                    header_idx = i
+                    break
+            if header_idx is None:
+                continue  # not the AV Equipment table
 
-    room_match = re.search(r"\nRoom\s*\n\s*([A-Za-z0-9\- ]+)\n", full_text)
-    data["avRoom"] = room_match.group(1).strip() if room_match else None
+            reading_room = False
+            for row in table[header_idx + 1:]:
+                if not row or not row[0]:
+                    continue
+                first_cell = row[0].strip()
+                second_cell = (row[1] or "").strip() if len(row) > 1 else ""
+
+                if first_cell == "Room":
+                    reading_room = True
+                    continue
+                if reading_room:
+                    room = first_cell
+                    reading_room = False
+                    continue
+                if second_cell.isdigit():
+                    equipment.append({"item": first_cell, "quantity": int(second_cell)})
+
+    data["avEquipment"] = equipment
+    data["avRoom"] = room
 
     return data
 

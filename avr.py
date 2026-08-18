@@ -40,7 +40,7 @@ EQUIPMENT_FIELD_MAP = {
 }
 
 
-def build_field_values(event: dict, profile: dict, defaults: dict) -> list:
+def build_field_values(event: dict, profile: dict) -> list:
     values = []
 
     def text(field_id, value):
@@ -62,10 +62,19 @@ def build_field_values(event: dict, profile: dict, defaults: dict) -> list:
     text("Purpose of Activity", event.get("eventTitle"))
 
     date_needed = event.get("date")
-    time_needed = event.get("startTime")
+    start_time = event.get("startTime")
+    end_time = event.get("endTime")
 
-    # AV Room
-    room = event.get("avRoom") or defaults["defaultAvRoom"]
+    if not start_time or not end_time:
+        raise ValueError("Proposal has no valid start/end time.")
+
+    time_needed = f"{start_time} - {end_time}"
+    # AV Room — always comes from the proposal now (no fallback default;
+    # if a proposal genuinely omits it, that's a proposal-writing gap to
+    # fix at the source, not something to silently default around).
+    room = event.get("avRoom")
+    if not room:
+        raise ValueError("Proposal has no AV Room specified — add a Room to the proposal's AV Equipment & Room Request section.")
     room_key = room if room in ROOM_FIELD_MAP else "Others"
     room_map = ROOM_FIELD_MAP[room_key]
     check(room_map["checkbox"])
@@ -74,8 +83,10 @@ def build_field_values(event: dict, profile: dict, defaults: dict) -> list:
     if room_key == "Others":
         text(room_map["remarks"], room)
 
-    # AV Equipment
-    equipment = event.get("avEquipment") or defaults["defaultAvEquipment"]
+    # AV Equipment — always comes from the proposal now (no fallback default).
+    equipment = event.get("avEquipment")
+    if not equipment:
+        raise ValueError("Proposal has no AV Equipment listed — add items to the proposal's AV Equipment table.")
     for eq in equipment:
         item_name = eq["item"]
         if item_name in EQUIPMENT_FIELD_MAP:
@@ -89,19 +100,41 @@ def build_field_values(event: dict, profile: dict, defaults: dict) -> list:
     return values
 
 
-def fill(event: dict, profile: dict, defaults: dict,
+def fill(event: dict, profile: dict,
          template_path: str = "templates/AVR.pdf",
          output_path: str = "output/AVR_filled.pdf") -> str:
-    field_values = build_field_values(event, profile, defaults)
 
+    from pypdf import PdfReader, PdfWriter
+
+    field_values = build_field_values(event, profile)
+
+    # Save values for debugging
     tmp_values_path = "output/_avr_field_values.json"
-    with open(tmp_values_path, "w") as f:
-        json.dump(field_values, f, indent=2)
+    with open(tmp_values_path, "w", encoding="utf-8") as f:
+        json.dump(field_values, f, indent=2, ensure_ascii=False)
 
-    subprocess.run([
-        "python", "/mnt/skills/public/pdf/scripts/fill_fillable_fields.py",
-        template_path, tmp_values_path, output_path,
-    ], check=True)
+    # Open the actual AVR PDF
+    reader = PdfReader(template_path)
+    writer = PdfWriter()
+    writer.clone_document_from_reader(reader)
+
+    # Convert our list into {field_id: value}
+    values = {
+        item["field_id"]: item["value"]
+        for item in field_values
+    }
+
+    # Fill AcroForm fields
+    for page in writer.pages:
+        writer.update_page_form_field_values(
+            page,
+            values,
+            auto_regenerate=False
+        )
+
+    # Write completed PDF
+    with open(output_path, "wb") as f:
+        writer.write(f)
 
     return output_path
 
