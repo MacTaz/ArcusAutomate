@@ -13,7 +13,6 @@ template with a different layout, re-extract with:
 """
 
 import json
-import subprocess
 import datetime
 import sys
 

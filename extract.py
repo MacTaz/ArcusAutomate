@@ -13,7 +13,6 @@ heavy AI/NLP step. Fast, free, deterministic.
 
 import pdfplumber
 import re
-import json
 import sys
 
 
@@ -146,6 +145,8 @@ def extract_proposal(pdf_path: str) -> dict:
 
 
 if __name__ == "__main__":
+    import json
+
     pdf_path = sys.argv[1] if len(sys.argv) > 1 else "input/proposal.pdf"
     result = extract_proposal(pdf_path)
     print(json.dumps(result, indent=2, ensure_ascii=False))

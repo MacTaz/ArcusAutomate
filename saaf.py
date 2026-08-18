@@ -8,12 +8,9 @@ No dependency on /mnt/skills or external PDF skill scripts.
 
 import fitz
 import datetime
-import textwrap
 import os
 
 
-PAGE_WIDTH = 612.0
-PAGE_HEIGHT = 936.0
 FONT_SIZE = 8
 
 # Fixed font size shared by Objectives, Core Values, and PEO so they all
