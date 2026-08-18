@@ -16,6 +16,13 @@ PAGE_WIDTH = 612.0
 PAGE_HEIGHT = 936.0
 FONT_SIZE = 8
 
+# Fixed font size shared by Objectives, Core Values, and PEO so they all
+# render visually consistently instead of each independently shrinking to
+# fit its own text. Anything that doesn't fit at this size within its
+# field's line count gets truncated with an ellipsis rather than shrunk
+# further — see _wrap_to_lines(min_font_size=font_size).
+MULTILINE_FONT_SIZE = 7.5
+
 INDIVIDUAL_CONTRIBUTION = "0"
 
 
@@ -28,6 +35,13 @@ CHECKBOXES = {
     "Extra-Curricular": [46.2, 118.8, 55.8, 126.6],
     "Major": [256.8, 108.0, 266.4, 115.8],
     "Minor": [256.8, 118.8, 266.4, 126.6],
+
+    # "ALIGNMENT WITH INSTITUTIONAL VISION, MISSION AND FORMATION GOALS"
+    # section — the 3 mission-statement checkboxes, always checked per
+    # request (this SAAF is always filed under all 3 institutional goals).
+    "MissionStatement1": [46.5, 352.6, 56.1, 360.4],
+    "MissionStatement2": [46.5, 363.4, 56.1, 371.2],
+    "MissionStatement3": [46.5, 374.2, 56.1, 382.0],
 }
 
 
@@ -91,47 +105,113 @@ def _compute_day(date_str):
     return ""
 
 
-def _wrap_to_lines(text, n_lines, box_width_pts, font_size=FONT_SIZE):
-    if not text:
-        return [""] * n_lines
+def _wrap_at_size(text, box_width_pts, font_size):
+    """
+    Word-wrap `text` to `box_width_pts` using the ACTUAL rendered width of
+    each candidate line at `font_size` (via fitz.get_text_length), rather
+    than a crude chars-per-line guess. Returns a list of lines.
+    """
+    words = str(text).split()
+    lines = []
+    current = ""
 
-    # Approximate number of characters that fit.
-    chars_per_line = max(
-        1,
-        int(box_width_pts / (font_size * 0.52))
-    )
-
-    wrapped = textwrap.wrap(
-        str(text),
-        width=chars_per_line,
-        break_long_words=False,
-        break_on_hyphens=False,
-    )
-
-    if len(wrapped) > n_lines:
-        print(
-            f"  [warn] Text truncated to {n_lines} lines: "
-            f"{str(text)[:80]}..."
-        )
-
-    lines = wrapped[:n_lines]
-
-    while len(lines) < n_lines:
-        lines.append("")
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if fitz.get_text_length(candidate, fontname="helv", fontsize=font_size) <= box_width_pts:
+            current = candidate
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
 
     return lines
 
 
-def _insert_text(page, box, text, font_size=FONT_SIZE):
+def _wrap_to_lines(text, n_lines, box_width_pts, font_size=FONT_SIZE, min_font_size=5.0):
     """
-    Inserts text inside a PDF-coordinate rectangle.
+    Fit `text` into exactly `n_lines` lines of width `box_width_pts`.
 
-    The original coordinates use:
-        x0, top, x1, bottom
+    Rather than truncating at a fixed font size (which silently drops
+    everything past line n_lines), this shrinks the font size step-by-step
+    until the full text actually fits in the available lines. Only if it
+    still doesn't fit at min_font_size do we truncate, and in that case we
+    add an ellipsis so the cut is visible on the page instead of silent.
 
-    PyMuPDF also uses top-left based coordinates,
-    so they can be used directly.
+    Returns (lines, font_size_used).
     """
+    if not text:
+        return [""] * n_lines, font_size
+
+    size = font_size
+    wrapped = _wrap_at_size(text, box_width_pts, size)
+
+    while len(wrapped) > n_lines and size > min_font_size:
+        size = round(size - 0.25, 2)
+        wrapped = _wrap_at_size(text, box_width_pts, size)
+
+    if len(wrapped) > n_lines:
+        # Even at the smallest allowed font size it doesn't fit.
+        # Truncate visibly (with an ellipsis) instead of silently.
+        print(
+            f"  [warn] Text still didn't fit at {size}pt, truncating with ellipsis: "
+            f"{str(text)[:80]}..."
+        )
+        lines = wrapped[:n_lines]
+        last = lines[-1]
+        while fitz.get_text_length(last + "…", fontname="helv", fontsize=size) > box_width_pts and len(last) > 1:
+            last = last[:-1].rstrip()
+        lines[-1] = last + "…"
+    else:
+        lines = wrapped
+        print(f"  [info] Fit text into {len(lines)}/{n_lines} lines at {size}pt")
+
+    while len(lines) < n_lines:
+        lines.append("")
+
+    return lines, size
+
+
+def _insert_text(page, box, text, font_size=FONT_SIZE, label=None, debug=False):
+    """
+    Insert text into a PDF rectangle and report whether it actually fit.
+
+    If debug=True, draws the rect's outline and a small label (the FIELDS
+    key) on the page regardless of whether text was supplied — this is
+    for visually checking box placement/size against the template.
+    """
+
+    x0, top, x1, bottom = box
+
+    # Give the text more vertical room than the raw coordinate box.
+    # NOTE: PyMuPDF's insert_textbox() needs slightly more than
+    # 1.2x-1.7x the font size in height to fit even a single line
+    # (exact factor depends on font metrics). The old "-1 / +4" padding
+    # (only 5pt total) was cutting it by a hair for 8pt text — every
+    # single-line field with an 8pt-tall template box was landing at
+    # 13.0pt available vs. ~13.38pt needed, so insert_textbox silently
+    # wrote NOTHING. Padding is bumped here, and lineheight is pinned
+    # explicitly so this doesn't depend on PyMuPDF's internal font-metric
+    # calculation (which is what caused the razor-thin, version-fragile
+    # shortfall in the first place).
+    rect = fitz.Rect(
+        x0,
+        top - 2,
+        x1,
+        bottom + 6
+    )
+
+    if debug:
+        page.draw_rect(rect, color=(1, 0, 0), width=0.4)
+        if label:
+            page.insert_text(
+                fitz.Point(x0, top - 3),
+                label,
+                fontsize=4,
+                fontname="helv",
+                color=(1, 0, 0),
+            )
 
     if text is None:
         return
@@ -141,32 +221,59 @@ def _insert_text(page, box, text, font_size=FONT_SIZE):
     if not text:
         return
 
-    x0, top, x1, bottom = box
-
-    rect = fitz.Rect(
-        x0,
-        top,
-        x1,
-        bottom
-    )
-
-    # Position text vertically inside the box.
-    page.insert_textbox(
+    result = page.insert_textbox(
         rect,
         text,
         fontsize=font_size,
         fontname="helv",
         color=(0, 0, 0),
         align=fitz.TEXT_ALIGN_LEFT,
+        lineheight=1.15,
     )
 
+    # Read the rect back to confirm the glyphs actually landed on the page,
+    # rather than just trusting insert_textbox's return code.
+    verify = page.get_text("text", clip=rect).strip()
 
-def _insert_checkbox(page, box):
+    print(
+        f"    [text] '{text[:50]}' "
+        f"box={rect} result={result} verify_readback={verify[:50]!r}"
+    )
+
+    if result < 0:
+        print(
+            f"    [ERROR] Text did not fit in box: "
+            f"'{text}'"
+        )
+
+    if not verify:
+        print(
+            f"    [ERROR] Nothing was actually written to the page for "
+            f"box={rect} (intended text: '{text}')"
+        )
+
+
+def _insert_checkbox(page, box, label=None, debug=False):
     """
     Draw an X inside the checkbox.
     """
 
     x0, top, x1, bottom = box
+
+    if debug:
+        page.draw_rect(
+            fitz.Rect(x0, top, x1, bottom),
+            color=(0, 0, 1),
+            width=0.4,
+        )
+        if label:
+            page.insert_text(
+                fitz.Point(x0, top - 2),
+                label,
+                fontsize=4,
+                fontname="helv",
+                color=(0, 0, 1),
+            )
 
     margin = 1.5
 
@@ -214,6 +321,7 @@ def fill(
     profile,
     template_path="templates/SAAF.pdf",
     output_path="output/SAAF_filled.pdf",
+    debug=False,
 ):
 
     print("  -> Opening SAAF template...")
@@ -246,25 +354,33 @@ def fill(
     _insert_text(
         page,
         FIELDS["applicantNameStudentNo"],
-        f"{profile['name']} {profile.get('studentNumber', '')}".strip()
+        f"{profile['name']} {profile.get('studentNumber', '')}".strip(),
+        label="applicantNameStudentNo",
+        debug=debug
     )
 
     _insert_text(
         page,
         FIELDS["programAndYear"],
-        profile["programAndYear"]
+        profile["programAndYear"],
+        label="programAndYear",
+        debug=debug
     )
 
     _insert_text(
         page,
         FIELDS["positionOfApplicant"],
-        profile["position"]
+        profile["position"],
+        label="positionOfApplicant",
+        debug=debug
     )
 
     _insert_text(
         page,
         FIELDS["orgCourseSection"],
-        profile["organizationName"]
+        profile["organizationName"],
+        label="orgCourseSection",
+        debug=debug
     )
 
     # -----------------------------------------------------------------------
@@ -274,7 +390,9 @@ def fill(
     _insert_text(
         page,
         FIELDS["dateOfSubmission"],
-        datetime.date.today().strftime("%m/%d/%Y")
+        datetime.date.today().strftime("%m/%d/%Y"),
+        label="dateOfSubmission",
+        debug=debug
     )
 
     # -----------------------------------------------------------------------
@@ -284,7 +402,9 @@ def fill(
     _insert_text(
         page,
         FIELDS["titleAndNature"],
-        event.get("eventTitle")
+        event.get("eventTitle"),
+        label="titleAndNature",
+        debug=debug
     )
 
     # Objectives
@@ -297,43 +417,57 @@ def fill(
         - FIELDS["objectivesLine1"][0]
     )
 
-    obj_lines = _wrap_to_lines(
+    obj_lines, obj_font_size = _wrap_to_lines(
         obj_text,
         2,
-        obj_width
+        obj_width,
+        font_size=MULTILINE_FONT_SIZE,
+        min_font_size=MULTILINE_FONT_SIZE,
     )
 
     _insert_text(
         page,
         FIELDS["objectivesLine1"],
-        obj_lines[0]
+        obj_lines[0],
+        font_size=obj_font_size,
+        label="objectivesLine1",
+        debug=debug
     )
 
     _insert_text(
         page,
         FIELDS["objectivesLine2"],
-        obj_lines[1]
+        obj_lines[1],
+        font_size=obj_font_size,
+        label="objectivesLine2",
+        debug=debug
     )
 
     # Venue
     _insert_text(
         page,
         FIELDS["venue"],
-        event.get("venue")
+        event.get("venue"),
+        label="venue",
+        debug=debug
     )
 
     # Date
     _insert_text(
         page,
         FIELDS["date"],
-        event.get("date")
+        event.get("date"),
+        label="date",
+        debug=debug
     )
 
     # Day
     _insert_text(
         page,
         FIELDS["day"],
-        _compute_day(event.get("date"))
+        _compute_day(event.get("date")),
+        label="day",
+        debug=debug
     )
 
     # Time
@@ -341,35 +475,45 @@ def fill(
         page,
         FIELDS["time"],
         event.get("time_raw")
-        or event.get("startTime")
+        or event.get("startTime"),
+        label="time",
+        debug=debug
     )
 
     # Participants
     _insert_text(
         page,
         FIELDS["participants"],
-        event.get("participants")
+        event.get("participants"),
+        label="participants",
+        debug=debug
     )
 
     # Budget
     _insert_text(
         page,
         FIELDS["proposedBudget"],
-        event.get("totalBudget")
+        event.get("totalBudget"),
+        label="proposedBudget",
+        debug=debug
     )
 
     # Organization members
     _insert_text(
         page,
         FIELDS["totalOrgMembers"],
-        event.get("totalOrgMembers")
+        event.get("totalOrgMembers"),
+        label="totalOrgMembers",
+        debug=debug
     )
 
     # Individual contribution
     _insert_text(
         page,
         FIELDS["individualContribution"],
-        INDIVIDUAL_CONTRIBUTION
+        INDIVIDUAL_CONTRIBUTION,
+        label="individualContribution",
+        debug=debug
     )
 
     # -----------------------------------------------------------------------
@@ -383,28 +527,39 @@ def fill(
         - FIELDS["coreValuesLine1"][0]
     )
 
-    cv_lines = _wrap_to_lines(
+    cv_lines, cv_font_size = _wrap_to_lines(
         cv_text,
         3,
-        cv_width
+        cv_width,
+        font_size=MULTILINE_FONT_SIZE,
+        min_font_size=MULTILINE_FONT_SIZE,
     )
 
     _insert_text(
         page,
         FIELDS["coreValuesLine1"],
-        cv_lines[0]
+        cv_lines[0],
+        font_size=cv_font_size,
+        label="coreValuesLine1",
+        debug=debug
     )
 
     _insert_text(
         page,
         FIELDS["coreValuesLine2"],
-        cv_lines[1]
+        cv_lines[1],
+        font_size=cv_font_size,
+        label="coreValuesLine2",
+        debug=debug
     )
 
     _insert_text(
         page,
         FIELDS["coreValuesLine3"],
-        cv_lines[2]
+        cv_lines[2],
+        font_size=cv_font_size,
+        label="coreValuesLine3",
+        debug=debug
     )
 
     # -----------------------------------------------------------------------
@@ -418,28 +573,39 @@ def fill(
         - FIELDS["peoLine1"][0]
     )
 
-    peo_lines = _wrap_to_lines(
+    peo_lines, peo_font_size = _wrap_to_lines(
         peo_text,
         3,
-        peo_width
+        peo_width,
+        font_size=MULTILINE_FONT_SIZE,
+        min_font_size=MULTILINE_FONT_SIZE,
     )
 
     _insert_text(
         page,
         FIELDS["peoLine1"],
-        peo_lines[0]
+        peo_lines[0],
+        font_size=peo_font_size,
+        label="peoLine1",
+        debug=debug
     )
 
     _insert_text(
         page,
         FIELDS["peoLine2"],
-        peo_lines[1]
+        peo_lines[1],
+        font_size=peo_font_size,
+        label="peoLine2",
+        debug=debug
     )
 
     _insert_text(
         page,
         FIELDS["peoLine3"],
-        peo_lines[2]
+        peo_lines[2],
+        font_size=peo_font_size,
+        label="peoLine3",
+        debug=debug
     )
 
     # -----------------------------------------------------------------------
@@ -456,7 +622,9 @@ def fill(
 
         _insert_checkbox(
             page,
-            CHECKBOXES["Extra-Curricular"]
+            CHECKBOXES["Extra-Curricular"],
+            label="Extra-Curricular",
+            debug=debug
         )
 
     elif (
@@ -468,7 +636,9 @@ def fill(
 
         _insert_checkbox(
             page,
-            CHECKBOXES["Co-Curricular"]
+            CHECKBOXES["Co-Curricular"],
+            label="Co-Curricular",
+            debug=debug
         )
 
     else:
@@ -492,7 +662,9 @@ def fill(
 
         _insert_checkbox(
             page,
-            CHECKBOXES["Major"]
+            CHECKBOXES["Major"],
+            label="Major",
+            debug=debug
         )
 
     elif activity_level == "minor":
@@ -501,7 +673,9 @@ def fill(
 
         _insert_checkbox(
             page,
-            CHECKBOXES["Minor"]
+            CHECKBOXES["Minor"],
+            label="Minor",
+            debug=debug
         )
 
     else:
@@ -509,6 +683,25 @@ def fill(
         print(
             f"  [warn] Unknown activity level: "
             f"{event.get('activityLevel')}"
+        )
+
+    # -----------------------------------------------------------------------
+    # Institutional Vision/Mission/Formation Goals — all 3 always checked
+    # -----------------------------------------------------------------------
+
+    print("  -> Marking all 3 mission statement checkboxes")
+
+    _insert_checkbox(page, CHECKBOXES["MissionStatement1"],
+            label="MissionStatement1",
+            debug=debug
+        )
+    _insert_checkbox(page, CHECKBOXES["MissionStatement2"],
+            label="MissionStatement2",
+            debug=debug
+        )
+    _insert_checkbox(page, CHECKBOXES["MissionStatement3"],
+            label="MissionStatement3",
+            debug=debug
         )
 
     # -----------------------------------------------------------------------

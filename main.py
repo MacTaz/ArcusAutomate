@@ -17,6 +17,7 @@ proposal itself (see the Official Event Proposal Template's "AV Equipment
 since those fields are expected to always be filled in on the proposal.
 """
  
+import argparse
 import json
 import os
  
@@ -39,6 +40,16 @@ APPLICANT_PROFILE = {
  
  
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--debug-saaf",
+        action="store_true",
+        help="Draw field/checkbox outlines on the SAAF output for box "
+             "placement testing, and write to output/SAAF_debug.pdf "
+             "instead of overwriting the real output.",
+    )
+    args = parser.parse_args()
+
     os.makedirs("output", exist_ok=True)
  
     print("Extracting proposal...")
@@ -52,7 +63,15 @@ def main():
     print(f"  -> {avr_out}")
  
     print("Filling SAAF...")
-    saaf_out = saaf.fill(event, APPLICANT_PROFILE)
+    if args.debug_saaf:
+        saaf_out = saaf.fill(
+            event,
+            APPLICANT_PROFILE,
+            debug=True,
+            output_path="output/SAAF_debug.pdf",
+        )
+    else:
+        saaf_out = saaf.fill(event, APPLICANT_PROFILE)
     print(f"  -> {saaf_out}")
  
     print("Done.")
