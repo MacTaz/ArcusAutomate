@@ -1,19 +1,16 @@
 """
 avr.py
 ------
-Fills templates/AVR.pdf (FM-AO-08-01) using the extracted proposal data plus
-constant config passed in from main.py. This template has real fillable
-AcroForm fields, so filling is done via pypdf field values (no coordinate
-guessing needed).
+Fills templates/AVR.pdf (FM-AO-08-01) using extracted proposal data and applicant profile constants.
+This template contains native AcroForm fields, so filling is performed directly via pypdf form field values.
 
-Field ID -> row mapping was reverse-engineered from templates/AVR.pdf by
-reading each field's position and tooltip (/TU). If Mapua reissues the AVR
-template with a different layout, re-extract with:
-    python /mnt/skills/public/pdf/scripts/extract_form_field_info.py templates/AVR.pdf
+Contains mappings for:
+- ROOM_FIELD_MAP: Room selection checkboxes, dates, times, and remarks fields.
+- EQUIPMENT_FIELD_MAP: Audio-Visual equipment checkboxes, dates, and times fields.
 """
 
-import json
 import datetime
+import json
 import sys
 
 ROOM_FIELD_MAP = {
@@ -40,24 +37,27 @@ EQUIPMENT_FIELD_MAP = {
 
 
 def build_field_values(event: dict, profile: dict) -> list:
+    """
+    Constructs the list of AcroForm field ID and value mappings required to populate the AVR form.
+    """
     values = []
 
     def text(field_id, value):
         if value is not None:
-            values.append({"field_id": field_id, "page": 1, "value": str(value)})
+            values.append({"field_id": field_id, "value": str(value)})
 
     def check(field_id):
-        values.append({"field_id": field_id, "page": 1, "value": "/Yes"})
+        values.append({"field_id": field_id, "value": "/Yes"})
 
-    # Applicant profile (constants)
+    # Applicant profile constants
     text("Name of Applicant", profile["name"])
     text("DepartmentCompany of Applicant", profile["department"])
     text("CourseSection", profile["courseSection"])
     text("Contact No", profile["contactNo"])
-    text("Date Applied", datetime.date.today().strftime("%m/%d/%Y"))  # auto-generated
+    text("Date Applied", datetime.date.today().strftime("%m/%d/%Y"))
     text("Signature of Applicant", profile["name"])
 
-    # Dynamic, from proposal
+    # Event details from extracted proposal
     text("No of Participants", event.get("participants"))
     text("Purpose of Activity", event.get("eventTitle"))
 
@@ -97,30 +97,29 @@ def build_field_values(event: dict, profile: dict) -> list:
 
 
 def fill(event: dict, profile: dict,
-         template_path: str = "templates/AVR.pdf",
-         output_path: str = "output/AVR_filled.pdf") -> str:
-
+          template_path: str = "templates/AVR.pdf",
+          output_path: str = "output/AVR_filled.pdf") -> str:
+    """
+    Fills the AVR PDF template with event and profile data, saving the result to output_path.
+    """
     from pypdf import PdfReader, PdfWriter
 
     field_values = build_field_values(event, profile)
 
-    # Save values for debugging
+    # Save extracted values for debugging audit
     tmp_values_path = "output/_avr_field_values.json"
     with open(tmp_values_path, "w", encoding="utf-8") as f:
         json.dump(field_values, f, indent=2, ensure_ascii=False)
 
-    # Open the actual AVR PDF
     reader = PdfReader(template_path)
     writer = PdfWriter()
     writer.clone_document_from_reader(reader)
 
-    # Convert our list into {field_id: value}
     values = {
         item["field_id"]: item["value"]
         for item in field_values
     }
 
-    # Fill AcroForm fields
     for page in writer.pages:
         writer.update_page_form_field_values(
             page,
@@ -128,11 +127,10 @@ def fill(event: dict, profile: dict,
             auto_regenerate=False
         )
 
-    # Write completed PDF
     with open(output_path, "wb") as f:
         writer.write(f)
 
-    # Render applicant signature name onto AVR PDF (Signature of Applicant is a /Sig field)
+    # Render applicant signature name onto signature field overlay
     import fitz
     doc = fitz.open(output_path)
     page = doc[0]

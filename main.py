@@ -34,7 +34,6 @@ import avr
 import saaf
  
 # ---- Constant: fixed per-applicant, reused every run ----
- 
 APPLICANT_PROFILE = {
     "name": "Mico Angelo C. Tazarte",
     "studentNumber": "2024109156",
@@ -47,7 +46,6 @@ APPLICANT_PROFILE = {
 }
 
 # ---- Constant: fixed organization adviser, reused every run ----
-# Replaces the old "Noted by:" extraction from the proposal PDF.
 ORGANIZATION_ADVISER = {
     "name": "Renilda S. Layno",
     "position": "Organization Adviser",
@@ -71,9 +69,6 @@ def main():
     print("Extracting proposal...")
     event = extract.extract_proposal("input/proposal.pdf")
 
-    # Adviser is a fixed org-level constant, not something read off the
-    # proposal PDF anymore — merge it in here so avr.py/saaf.py can keep
-    # reading event["adviserName"] unchanged.
     event["adviserName"] = ORGANIZATION_ADVISER["name"]
 
     with open("output/_extracted.json", "w") as f:
