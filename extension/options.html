@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Applicant Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Applicant Profile</h1>
+    <p class="hint">This information is filled into the AVR and SAAF automatically. It's saved in your browser and reused every time.</p>
+
+    <form id="profileForm">
+      <label>Full Name
+        <input type="text" name="name" required />
+      </label>
+
+      <label>Student Number
+        <input type="text" name="studentNumber" required />
+      </label>
+
+      <label>Program &amp; Year
+        <input type="text" name="programAndYear" placeholder="e.g. BSCS - 3" required />
+      </label>
+
+      <label>Position
+        <input type="text" name="position" placeholder="e.g. Corporate Secretary" required />
+      </label>
+
+      <label>Department
+        <input type="text" name="department" placeholder="e.g. SOIT" required />
+      </label>
+
+      <label>Course &amp; Section
+        <input type="text" name="courseSection" placeholder="e.g. BSCS - 3" required />
+      </label>
+
+      <label>Contact No.
+        <input type="text" name="contactNo" required />
+      </label>
+
+      <label>Organization Name
+        <input type="text" name="organizationName" required />
+      </label>
+
+      <button type="submit" class="primary-btn">Save</button>
+      <div id="savedMsg" class="saved-msg" hidden>Saved ✓</div>
+    </form>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

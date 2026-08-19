@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Arcus Automation</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Arcus Automation</h1>
+
+    <a id="guidelinesLink"
+       href="https://docs.google.com/document/d/REPLACE_WITH_YOUR_DOC_ID/edit"
+       target="_blank" rel="noopener noreferrer"
+       class="guidelines-link">
+      📄 Proposal Guidelines ↗
+    </a>
+
+    <div id="dropZone" class="drop-zone">
+      <p id="dropZoneText">Drag &amp; drop your proposal PDF here<br>or click to browse</p>
+      <input type="file" id="fileInput" accept="application/pdf" hidden />
+    </div>
+
+    <div id="fileInfo" class="file-info" hidden>
+      <span id="fileName"></span>
+      <button id="clearFile" class="link-btn">Remove</button>
+    </div>
+
+    <button id="generateBtn" class="primary-btn" disabled>Generate Documents</button>
+
+    <div id="status" class="status" hidden></div>
+
+    <div id="results" class="results" hidden>
+      <button id="downloadAvr" class="secondary-btn">Download AVR</button>
+      <button id="downloadSaaf" class="secondary-btn">Download SAAF</button>
+      <button id="downloadMaster" class="secondary-btn">Download Master (Proposal+SAAF+AVR)</button>
+    </div>
+
+    <div class="footer-row">
+      <button id="openSettings" class="link-btn">⚙ Applicant Settings</button>
+      <button id="autofillBtn" class="link-btn" disabled title="Coming soon">
+        🌐 Auto-fill Engage Form (coming soon)
+      </button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

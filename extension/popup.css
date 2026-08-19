@@ -1,0 +1,108 @@
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  width: 320px;
+  margin: 0;
+  padding: 0;
+  color: #1a1a1a;
+}
+
+.container {
+  padding: 16px;
+}
+
+h1 {
+  font-size: 16px;
+  margin: 0 0 12px;
+}
+
+.guidelines-link {
+  display: inline-block;
+  font-size: 13px;
+  color: #d6336c;
+  text-decoration: none;
+  margin-bottom: 12px;
+}
+.guidelines-link:hover {
+  text-decoration: underline;
+}
+
+.drop-zone {
+  border: 2px dashed #c9c9c9;
+  border-radius: 8px;
+  padding: 24px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.drop-zone.dragover {
+  border-color: #d6336c;
+  background: #fff5f7;
+}
+
+.file-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.primary-btn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px;
+  background: #d6336c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.primary-btn:disabled {
+  background: #e9a5bc;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  background: #f1f1f1;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #555;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+.link-btn:disabled {
+  color: #bbb;
+  cursor: not-allowed;
+}
+
+.status {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #555;
+}
+
+.results {
+  margin-top: 12px;
+}
+
+.footer-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
