@@ -15,6 +15,9 @@ form.addEventListener("submit", (e) => {
   const formData = new FormData(form);
   const profile = Object.fromEntries(formData.entries());
 
+  // Automatically mirror programAndYear to courseSection for backend form population
+  profile.courseSection = profile.programAndYear;
+
   chrome.storage.sync.set({ applicantProfile: profile }, () => {
     savedMsg.hidden = false;
     setTimeout(() => (savedMsg.hidden = true), 2000);

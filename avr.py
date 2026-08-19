@@ -52,7 +52,7 @@ def build_field_values(event: dict, profile: dict) -> list:
     # Applicant profile constants
     text("Name of Applicant", profile["name"])
     text("DepartmentCompany of Applicant", profile["department"])
-    text("CourseSection", profile["courseSection"])
+    text("CourseSection", profile.get("courseSection") or profile.get("programAndYear"))
     text("Contact No", profile["contactNo"])
     text("Date Applied", datetime.date.today().strftime("%m/%d/%Y"))
     text("Signature of Applicant", profile["name"])

@@ -257,7 +257,8 @@ def fill(
         label="applicantNameStudentNo",
         debug=debug,
     )
-    _insert_text(page, FIELDS["programAndYear"], profile["programAndYear"], label="programAndYear", debug=debug)
+    prog_yr = profile.get("programAndYear") or profile.get("courseSection")
+    _insert_text(page, FIELDS["programAndYear"], prog_yr, label="programAndYear", debug=debug)
     _insert_text(page, FIELDS["positionOfApplicant"], profile["position"], label="positionOfApplicant", debug=debug)
     _insert_text(page, FIELDS["orgCourseSection"], profile["organizationName"], label="orgCourseSection", debug=debug)
 
