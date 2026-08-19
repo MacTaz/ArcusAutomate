@@ -8,13 +8,11 @@
   "activityType": "Extra-Curricular",
   "totalOrgMembers": 72,
   "participants": 40,
-  "venue": "Mapúa University Makati",
+  "venue": "Mapúa University.",
   "totalBudget": "2400",
-  "adviserName": "Renilda S. Layno",
   "objectives": [
-    "To actively strip down social barriers between organization members, successfully transitioning unacquainted attendees into comfortable, interactive peer networks via structured icebreakers.",
-    "To deploy custom-developed mobile applications and gamified team challenges that cultivate real-time communication, collective strategy, and peer reliance.",
-    "To provide a comprehensive, transparent orientation outlining the structural duties of each executive department, the explicit benefits of student membership, and the AWS cloud development milestones for the academic year."
+    "IAM ACCESS GRANTED: AWS-SBG - Arcus General Assembly 001 aims to successfully integrate newly-registered members into the AWS Student Builder Group environment by encouraging a highly collaborative and heartfelt institutional atmosphere.",
+    "The event shall utilize the strategic execution of gamified social icebreakers and structured team-building exercises, targeting to dismantle social barriers, alleviate transitional academic anxieties, and transfigure unacquainted students into a supportive community of builders aligned with the organization’s empowerment in advancing cloud computing competencies at Mapúa University."
   ],
   "peoWriteup": "This activity supports the development of students who can work effectively within collaborative, multidisciplinary teams, as demonstrated through the event's structured team-building exercises and peer-reliance challenges. It also reinforces students' ability to function both independently and as part of a team, reflected in the shift from passive orientation to active, team-based participation throughout the program.",
   "coreValuesWriteup": "This activity reflects the organization's Commitment by dedicating structured time and resources toward the smooth integration of newly-registered members, rather than leaving onboarding informal. It also demonstrates Relevance by tying membership onboarding directly to real, industry-relevant cloud computing competencies, ensuring the community-building effort stays grounded in the organization's technical mission. Finally, the event models Excellence through its structured, gamified framework, setting a higher standard of engagement than a passive orientation would.",
@@ -32,5 +30,9 @@
       "quantity": 2
     }
   ],
-  "avRoom": "MPO306"
+  "avRoom": "MPO306",
+  "strict_errors": [],
+  "warnings": [],
+  "is_valid": true,
+  "adviserName": "Renilda S. Layno"
 }

@@ -55,6 +55,7 @@ def build_field_values(event: dict, profile: dict) -> list:
     text("CourseSection", profile["courseSection"])
     text("Contact No", profile["contactNo"])
     text("Date Applied", datetime.date.today().strftime("%m/%d/%Y"))  # auto-generated
+    text("Signature of Applicant", profile["name"])
 
     # Dynamic, from proposal
     text("No of Participants", event.get("participants"))
@@ -68,9 +69,6 @@ def build_field_values(event: dict, profile: dict) -> list:
         raise ValueError("Proposal has no valid start/end time.")
 
     time_needed = f"{start_time} - {end_time}"
-    # AV Room — always comes from the proposal now (no fallback default;
-    # if a proposal genuinely omits it, that's a proposal-writing gap to
-    # fix at the source, not something to silently default around).
     room = event.get("avRoom")
     if not room:
         raise ValueError("Proposal has no AV Room specified — add a Room to the proposal's AV Equipment & Room Request section.")
@@ -82,7 +80,6 @@ def build_field_values(event: dict, profile: dict) -> list:
     if room_key == "Others":
         text(room_map["remarks"], room)
 
-    # AV Equipment — always comes from the proposal now (no fallback default).
     equipment = event.get("avEquipment")
     if not equipment:
         raise ValueError("Proposal has no AV Equipment listed — add items to the proposal's AV Equipment table.")
@@ -134,6 +131,25 @@ def fill(event: dict, profile: dict,
     # Write completed PDF
     with open(output_path, "wb") as f:
         writer.write(f)
+
+    # Render applicant signature name onto AVR PDF (Signature of Applicant is a /Sig field)
+    import fitz
+    doc = fitz.open(output_path)
+    page = doc[0]
+    applicant_name = str(profile.get("name", "")).strip()
+    if applicant_name:
+        center_x = (41.4 + 243.36) / 2.0
+        text_len = fitz.get_text_length(applicant_name, fontname="helv", fontsize=10.5)
+        x = center_x - (text_len / 2.0)
+        page.insert_text(
+            fitz.Point(x, 588.5),
+            applicant_name,
+            fontsize=10.5,
+            fontname="helv",
+            color=(0, 0, 0)
+        )
+    doc.save(output_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
+    doc.close()
 
     return output_path
 

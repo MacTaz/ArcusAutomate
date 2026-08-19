@@ -15,6 +15,14 @@ AV Room, and every other event-specific value now come straight from the
 proposal itself (see the Official Event Proposal Template's "AV Equipment
 & Room Request" section) — there are no org-level fallback defaults left,
 since those fields are expected to always be filled in on the proposal.
+
+ORGANIZATION_ADVISER is kept here as a plain constant for the same reason
+as APPLICANT_PROFILE: it does not change per proposal. It used to be
+scraped off the "Noted by:" signature line in the PDF via a fragile
+positional name-pattern heuristic (that line also contains the COO's name
+with no reliable delimiter between the two). That extraction step has been
+removed from extract.py entirely — the adviser name is merged into the
+extracted event dict here instead.
 """
  
 import argparse
@@ -37,6 +45,14 @@ APPLICANT_PROFILE = {
     "contactNo": "09457786367",
     "organizationName": "AWS Student Builder Group - Arcus",
 }
+
+# ---- Constant: fixed organization adviser, reused every run ----
+# Replaces the old "Noted by:" extraction from the proposal PDF.
+ORGANIZATION_ADVISER = {
+    "name": "Renilda S. Layno",
+    "position": "Organization Adviser",
+    "organizationName": "AWS Student Builder Group - Arcus",
+}
  
  
 def main():
@@ -54,6 +70,12 @@ def main():
  
     print("Extracting proposal...")
     event = extract.extract_proposal("input/proposal.pdf")
+
+    # Adviser is a fixed org-level constant, not something read off the
+    # proposal PDF anymore — merge it in here so avr.py/saaf.py can keep
+    # reading event["adviserName"] unchanged.
+    event["adviserName"] = ORGANIZATION_ADVISER["name"]
+
     with open("output/_extracted.json", "w") as f:
         json.dump(event, f, indent=2, ensure_ascii=False)
     print(f"  -> extracted {sum(1 for v in event.values() if v not in (None, [], ''))} non-empty fields")

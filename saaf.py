@@ -78,6 +78,9 @@ FIELDS = {
     "peoLine1": [45.0, 456.1, 539.0, 464.1],
     "peoLine2": [45.0, 465.3, 539.0, 473.3],
     "peoLine3": [45.0, 474.6, 539.0, 482.6],
+
+    "classOfficerName": [48.5, 548.0, 267.0, 556.0],
+    "facultyAdviserName": [303.1, 548.0, 521.5, 556.0],
 }
 
 
@@ -170,7 +173,7 @@ def _wrap_to_lines(text, n_lines, box_width_pts, font_size=FONT_SIZE, min_font_s
     return lines, size
 
 
-def _insert_text(page, box, text, font_size=FONT_SIZE, label=None, debug=False):
+def _insert_text(page, box, text, font_size=FONT_SIZE, align=fitz.TEXT_ALIGN_LEFT, top_pad=2, bottom_pad=6, label=None, debug=False):
     """
     Insert text into a PDF rectangle and report whether it actually fit.
 
@@ -182,21 +185,11 @@ def _insert_text(page, box, text, font_size=FONT_SIZE, label=None, debug=False):
     x0, top, x1, bottom = box
 
     # Give the text more vertical room than the raw coordinate box.
-    # NOTE: PyMuPDF's insert_textbox() needs slightly more than
-    # 1.2x-1.7x the font size in height to fit even a single line
-    # (exact factor depends on font metrics). The old "-1 / +4" padding
-    # (only 5pt total) was cutting it by a hair for 8pt text — every
-    # single-line field with an 8pt-tall template box was landing at
-    # 13.0pt available vs. ~13.38pt needed, so insert_textbox silently
-    # wrote NOTHING. Padding is bumped here, and lineheight is pinned
-    # explicitly so this doesn't depend on PyMuPDF's internal font-metric
-    # calculation (which is what caused the razor-thin, version-fragile
-    # shortfall in the first place).
     rect = fitz.Rect(
         x0,
-        top - 2,
+        top - top_pad,
         x1,
-        bottom + 6
+        bottom + bottom_pad
     )
 
     if debug:
@@ -224,7 +217,7 @@ def _insert_text(page, box, text, font_size=FONT_SIZE, label=None, debug=False):
         fontsize=font_size,
         fontname="helv",
         color=(0, 0, 0),
-        align=fitz.TEXT_ALIGN_LEFT,
+        align=align,
         lineheight=1.15,
     )
 
@@ -248,6 +241,27 @@ def _insert_text(page, box, text, font_size=FONT_SIZE, label=None, debug=False):
             f"    [ERROR] Nothing was actually written to the page for "
             f"box={rect} (intended text: '{text}')"
         )
+
+
+def _insert_signature_name(page, line_x0, line_x1, line_y, name, font_size=10.5):
+    """
+    Renders text centered horizontally over a signature line [line_x0, line_x1]
+    with its baseline sitting exactly 1.5pt above line_y.
+    """
+    if not name:
+        return
+    text = str(name).strip()
+    center_x = (line_x0 + line_x1) / 2.0
+    text_len = fitz.get_text_length(text, fontname="helv", fontsize=font_size)
+    x = center_x - (text_len / 2.0)
+    baseline_y = line_y - 1.5
+    page.insert_text(
+        fitz.Point(x, baseline_y),
+        text,
+        fontsize=font_size,
+        fontname="helv",
+        color=(0, 0, 0)
+    )
 
 
 def _insert_checkbox(page, box, label=None, debug=False):
@@ -405,9 +419,14 @@ def fill(
     )
 
     # Objectives
-    obj_text = "; ".join(
-        event.get("objectives") or []
-    )
+    objs = event.get("objectives") or []
+    if isinstance(objs, str):
+        obj_text = objs
+    else:
+        if any(item.endswith((".", "!", "?")) for item in objs):
+            obj_text = " ".join(objs)
+        else:
+            obj_text = "; ".join(objs)
 
     obj_width = (
         FIELDS["objectivesLine1"][2]
@@ -604,6 +623,19 @@ def fill(
         label="peoLine3",
         debug=debug
     )
+
+    # -----------------------------------------------------------------------
+    # In-Charge / Organizers (Names above signature lines)
+    # -----------------------------------------------------------------------
+
+    # -----------------------------------------------------------------------
+    # In-Charge / Organizers (Names centered right above signature lines)
+    # -----------------------------------------------------------------------
+    # Class Officer line: x0=48.525, x1=266.95, line_y=566.5
+    _insert_signature_name(page, 48.525, 266.95, 566.5, profile.get("name"), font_size=10.5)
+
+    # Faculty Adviser line: x0=303.13, x1=521.50, line_y=566.5
+    _insert_signature_name(page, 303.13, 521.50, 566.5, event.get("adviserName"), font_size=10.5)
 
     # -----------------------------------------------------------------------
     # Activity type checkbox
