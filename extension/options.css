@@ -1,6 +1,7 @@
 body {
-  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
-  color: #1a1a1a;
+  font-family: Arial, sans-serif;
+  color: #fff;
+  background: #111c2c;
   margin: 0;
 }
 
@@ -38,19 +39,24 @@ label {
 input {
   font-size: 14px;
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid rgba(231,131,20,0.4);
   border-radius: 6px;
   font-weight: normal;
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  font-family: Arial, sans-serif;
 }
 
 .primary-btn {
   margin-top: 10px;
   padding: 10px;
-  background: #d6336c;
-  color: white;
+  background: #e78314;
+  color: #111c2c;
   border: none;
   border-radius: 6px;
   font-size: 14px;
+  font-family: Arial, sans-serif;
+  font-weight: 600;
   cursor: pointer;
 }
 

@@ -12,7 +12,6 @@ const generateBtn = document.getElementById("generateBtn");
 const statusEl = document.getElementById("status");
 const resultsEl = document.getElementById("results");
 const openSettingsBtn = document.getElementById("openSettings");
-const autofillBtn = document.getElementById("autofillBtn");
 
 let selectedFile = null;
 let generatedUrls = { avr: null, saaf: null, master: null };
@@ -52,16 +51,19 @@ function handleFile(file) {
   selectedFile = file;
   fileNameEl.textContent = file.name;
   fileInfo.hidden = false;
+  clearFileBtn.hidden = false;
   dropZoneText.textContent = "PDF selected — drop another to replace";
   generateBtn.disabled = false;
   resultsEl.hidden = true;
   setStatus("");
 }
 
-clearFileBtn.addEventListener("click", () => {
+clearFileBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
   selectedFile = null;
   fileInput.value = "";
   fileInfo.hidden = true;
+  clearFileBtn.hidden = true;
   dropZoneText.textContent = "Drag & drop your proposal PDF here\nor click to browse";
   generateBtn.disabled = true;
   resultsEl.hidden = true;
@@ -132,8 +134,7 @@ openSettingsBtn.addEventListener("click", () => {
   chrome.runtime.openOptionsPage();
 });
 
-// autofillBtn intentionally left disabled — reserved for the future
-// "Engage form auto-fill" feature (content-script based).
+
 
 // ---- Helpers ----
 function base64ToObjectUrl(base64, mime = "application/pdf") {
