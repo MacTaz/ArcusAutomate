@@ -119,35 +119,29 @@ export async function fillAvr(event, profile) {
 
   // Room
   const room = event.avRoom;
-  if (!room) {
-    throw new Error(
-      "Proposal has no AV Room specified — add a Room to the proposal's AV Equipment & Room Request section."
-    );
-  }
-  const roomKey = room in ROOM_FIELD_MAP ? room : "Others";
-  const roomMap = ROOM_FIELD_MAP[roomKey];
-  checkBox(roomMap.checkbox);
-  setText(roomMap.date, dateNeeded);
-  setText(roomMap.time, timeNeeded);
-  if (roomKey === "Others") {
-    setText(roomMap.remarks, room);
+  if (room) {
+    const roomKey = room in ROOM_FIELD_MAP ? room : "Others";
+    const roomMap = ROOM_FIELD_MAP[roomKey];
+    checkBox(roomMap.checkbox);
+    setText(roomMap.date, dateNeeded);
+    setText(roomMap.time, timeNeeded);
+    if (roomKey === "Others") {
+      setText(roomMap.remarks, room);
+    }
   }
 
   // Equipment
   const equipment = event.avEquipment;
-  if (!equipment || equipment.length === 0) {
-    throw new Error(
-      "Proposal has no AV Equipment listed — add items to the proposal's AV Equipment table."
-    );
-  }
-  for (const eq of equipment) {
-    const m = EQUIPMENT_FIELD_MAP[eq.item];
-    if (m) {
-      checkBox(m.checkbox);
-      setText(m.date, dateNeeded);
-      setText(m.time, timeNeeded);
-    } else {
-      console.warn(`[AVR] '${eq.item}' has no known field mapping — skipped.`);
+  if (equipment && equipment.length > 0) {
+    for (const eq of equipment) {
+      const m = EQUIPMENT_FIELD_MAP[eq.item];
+      if (m) {
+        checkBox(m.checkbox);
+        setText(m.date, dateNeeded);
+        setText(m.time, timeNeeded);
+      } else {
+        console.warn(`[AVR] '${eq.item}' has no known field mapping — skipped.`);
+      }
     }
   }
 

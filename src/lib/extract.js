@@ -164,8 +164,6 @@ function parseAvTable(tableRows, strictErrors) {
   }
 
   if (!foundTable) {
-    strictErrors.push("AV Equipment table with exact 'Item' / 'Quantity' headers not found.");
-    strictErrors.push("Room label/value not found in the AV Equipment table.");
     return { equipment, avRoom };
   }
 
@@ -236,10 +234,6 @@ function parseAvTable(tableRows, strictErrors) {
         break;
       }
     }
-  }
-
-  if (!avRoom) {
-    strictErrors.push("Room label/value not found in the AV Equipment table.");
   }
 
   return { equipment, avRoom };
@@ -313,14 +307,23 @@ export async function extractProposal(file, strict = true) {
   data.totalOrgMembers = totalMembersMatch ? parseInt(totalMembersMatch[1]) : null;
 
   // ---- Participants ----
-  const participantsMatch = requireMatch(
-    "\\bcater\\s+(\\d+)\\s+participants\\b",
-    fullText,
-    "'cater [NUMBER] participants' statement",
-    "",
-    strictErrors
-  );
-  data.participants = participantsMatch ? parseInt(participantsMatch[1]) : null;
+  let participantsMatch = fullText.match(/\bcater\s+(\d+)\s+participants\b/i);
+  if (!participantsMatch) {
+    participantsMatch = fullText.match(/^Total Number of (?:Target\s+)?Participants:\s*(\d+)\b/im);
+  }
+  if (!participantsMatch) {
+    participantsMatch = fullText.match(/^Target Participants:\s*(\d+)\b/im);
+  }
+  if (!participantsMatch) {
+    participantsMatch = fullText.match(/^Total Number of Members:\s*(\d+)\b/im);
+  }
+
+  if (participantsMatch) {
+    data.participants = parseInt(participantsMatch[1]);
+  } else {
+    data.participants = null;
+    strictErrors.push("Number of participants (e.g. 'cater [NUMBER] participants' or 'Total Number of Members: [NUMBER]') not found.");
+  }
 
   // ---- Venue ----
   let venueMatch = fullText.match(/\|\s*([^|\n]*\bUniversity\b[^|\n]*)\|/i);
