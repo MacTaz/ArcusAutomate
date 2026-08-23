@@ -100,7 +100,7 @@ function wrapToLines(text, nLines, boxWidthPt, fontSize = FONT_SIZE) {
   if (!text) return Array(nLines).fill("");
   let size = fontSize;
   let lines = wrapText(text, boxWidthPt, size);
-  const minSize = 5.0;
+  const minSize = 4.5;
 
   while (lines.length > nLines && size > minSize) {
     size = Math.round((size - 0.25) * 100) / 100;
@@ -108,14 +108,35 @@ function wrapToLines(text, nLines, boxWidthPt, fontSize = FONT_SIZE) {
   }
 
   if (lines.length > nLines) {
-    lines = lines.slice(0, nLines);
-    // Truncate last line with ellipsis if needed
-    while (lines[nLines - 1].length > 3) {
-      const maxLen = Math.floor((FIELDS.objectivesLine1[2] - FIELDS.objectivesLine1[0]) / (size * 0.55));
-      if (lines[nLines - 1].length <= maxLen) break;
-      lines[nLines - 1] = lines[nLines - 1].slice(0, -1).trimEnd();
+    // 1. Try sentence-aware fitting: drop trailing sentences if text has multiple sentences
+    const sentences = text.split(/(?<=[.!?])\s+/);
+    let fittedBySentence = false;
+    if (sentences.length > 1) {
+      for (let i = sentences.length - 1; i >= 1; i--) {
+        const candidateText = sentences.slice(0, i).join(" ");
+        const candLines = wrapText(candidateText, boxWidthPt, size);
+        if (candLines.length <= nLines) {
+          lines = candLines;
+          fittedBySentence = true;
+          break;
+        }
+      }
     }
-    lines[nLines - 1] += "…";
+
+    // 2. If a single sentence is still too long, truncate cleanly and end with a period
+    if (!fittedBySentence) {
+      lines = lines.slice(0, nLines);
+      const maxLen = Math.floor(boxWidthPt / (size * 0.55));
+      let lastLine = lines[nLines - 1];
+      if (lastLine.length > maxLen) {
+        lastLine = lastLine.slice(0, maxLen).trimEnd();
+      }
+      lastLine = lastLine.replace(/[.…]+$/, "").trimEnd();
+      if (!/[.!?]$/.test(lastLine)) {
+        lastLine += ".";
+      }
+      lines[nLines - 1] = lastLine;
+    }
   }
 
   while (lines.length < nLines) lines.push("");

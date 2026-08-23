@@ -355,7 +355,7 @@ export async function extractProposal(file, strict = true) {
       .split(/(?<=[.!?])\s+/)
       .map((s) => s.trim())
       .filter(Boolean);
-    data.objectives = sentences.slice(0, 2);
+    data.objectives = sentences.slice(0, 1);
     if (!data.objectives.length) {
       strictErrors.push("'Main Objective' section found, but no sentences extracted.");
     }
@@ -368,7 +368,7 @@ export async function extractProposal(file, strict = true) {
       data.objectives = bullets
         .map((b) => b.trim().replace(/\n/g, " "))
         .filter(Boolean)
-        .slice(0, 2);
+        .slice(0, 1);
     } else {
       data.objectives = [];
     }
