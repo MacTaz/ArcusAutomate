@@ -257,7 +257,7 @@ export async function fillSaaf(event, profile) {
   drawText(FIELDS.objectivesLine2, objLines[1], MULTILINE_FONT_SIZE);
 
   // Venue, date, day, time, participants, budget, members, contribution
-  drawText(FIELDS.venue, event.venue);
+  drawText(FIELDS.venue, profile.venue);
   drawText(FIELDS.date, event.date);
   drawText(FIELDS.day, computeDay(event.date));
   drawText(FIELDS.time, event.time_raw || event.startTime);

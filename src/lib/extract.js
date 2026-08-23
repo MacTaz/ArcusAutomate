@@ -325,16 +325,6 @@ export async function extractProposal(file, strict = true) {
     strictErrors.push("Number of participants (e.g. 'cater [NUMBER] participants' or 'Total Number of Members: [NUMBER]') not found.");
   }
 
-  // ---- Venue ----
-  let venueMatch = fullText.match(/\|\s*([^|\n]*\bUniversity\b[^|\n]*)\|/i);
-  if (!venueMatch) {
-    venueMatch = fullText.match(/^(.*\bUniversity\b.*)$/im);
-    if (!venueMatch) {
-      strictErrors.push("Venue containing 'University' not found.");
-    }
-  }
-  data.venue = venueMatch ? venueMatch[1].trim() : null;
-
   // ---- Total Allocated Budget ----
   const budgetMatch = requireMatch(
     "^Total Allocated Budget:\\s*[₱P]?\\s*([\\d,]+(?:\\.\\d+)?)\\b",
