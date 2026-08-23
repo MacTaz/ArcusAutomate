@@ -1,0 +1,297 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* ========== BASE ========== */
+html, body {
+  font-family: 'Inter', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  color: #cfd8e3;
+  background: #111c2c;
+}
+
+/* ========== POPUP — enforce 400px width ========== */
+/* Chrome extension popup sizes to content; set it on html + body */
+body.popup-body,
+body.popup-body html {
+  width: 400px;
+  min-width: 400px;
+  max-width: 400px;
+}
+
+/* ========== OPTIONS body ========== */
+body.options-body {
+  min-height: 100vh;
+}
+
+.container {
+  padding: 20px;
+  width: 400px;
+  min-width: 400px;
+}
+
+/* OPTIONS container overrides */
+body.options-body .container {
+  width: auto;
+  min-width: unset;
+  max-width: 440px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+/* ========== TYPOGRAPHY ========== */
+h1 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 14px;
+  background: linear-gradient(90deg, #e78314, #d94f8e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+body.popup-body h1 {
+  font-size: 18px;
+}
+
+.hint {
+  font-size: 13px;
+  color: #5a6a7e;
+  margin-bottom: 20px;
+}
+
+/* ========== GUIDELINES LINK ========== */
+.guidelines-link {
+  display: inline-block;
+  font-size: 13px;
+  color: #e78314;
+  text-decoration: none;
+  margin-bottom: 14px;
+  transition: color 0.15s;
+}
+.guidelines-link:hover {
+  text-decoration: underline;
+  color: #f5a623;
+}
+
+/* ========== DROP ZONE ========== */
+.drop-zone-wrapper {
+  position: relative;
+  overflow: visible;
+  margin-bottom: 35px;
+}
+
+.drop-zone {
+  border: 2px dashed #2a3a52;
+  border-radius: 10px;
+  padding: 16px 16px 80px;
+  text-align: center;
+  font-size: 13px;
+  color: #7a8ba3;
+  cursor: pointer;
+  background: #16253a;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  overflow: visible;
+  user-select: none;
+}
+.drop-zone p {
+  margin: 0;
+  white-space: pre-line;
+}
+.drop-zone:hover {
+  border-color: #e78314;
+  background: #1a2d45;
+  box-shadow: 0 0 0 3px rgba(231, 131, 20, 0.08);
+}
+.drop-zone.dragover {
+  border-color: #e78314;
+  background: rgba(231, 131, 20, 0.1);
+  box-shadow: 0 0 0 4px rgba(231, 131, 20, 0.15);
+}
+.drop-zone.has-file {
+  border-style: solid;
+  border-color: #3a6a52;
+  background: #162e25;
+}
+
+.drop-zone-dog {
+  position: absolute;
+  bottom: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  pointer-events: none;
+  z-index: 10;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+}
+
+.remove-btn {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  background: rgba(220, 60, 60, 0.15);
+  border: 1px solid rgba(220, 60, 60, 0.4);
+  color: #e06060;
+  font-size: 11px;
+  font-family: 'Inter', Arial, sans-serif;
+  padding: 4px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  z-index: 11;
+  transition: background 0.15s, color 0.15s;
+}
+.remove-btn:hover {
+  background: rgba(220, 60, 60, 0.3);
+  color: #ff7070;
+}
+
+/* ========== FILE INFO ========== */
+.file-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #cfd8e3;
+}
+
+/* ========== BUTTONS ========== */
+.primary-btn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 11px;
+  background: linear-gradient(90deg, #e78314, #d94f8e);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 14px;
+  font-family: 'Inter', Arial, sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: 0.01em;
+}
+.primary-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.primary-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.primary-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 9px;
+  background: #16253a;
+  border: 1px solid #2a3a52;
+  color: #cfd8e3;
+  border-radius: 7px;
+  font-size: 13px;
+  font-family: 'Inter', Arial, sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  text-align: left;
+}
+.secondary-btn:hover {
+  border-color: #e78314;
+  background: #1a2d45;
+  transform: translateX(2px);
+}
+.secondary-btn:active {
+  transform: translateX(0);
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #7a8ba3;
+  font-size: 12px;
+  font-family: 'Inter', Arial, sans-serif;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+}
+.link-btn:hover {
+  color: #e78314;
+}
+
+/* ========== STATUS ========== */
+.status {
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: #7a8ba3;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* ========== RESULTS ========== */
+.results {
+  margin-top: 12px;
+}
+
+/* ========== FOOTER ========== */
+.footer-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  border-top: 1px solid #1e2e44;
+  padding-top: 10px;
+}
+
+/* ========== OPTIONS FORM ========== */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 5px;
+  color: #cfd8e3;
+}
+
+input[type="text"] {
+  font-size: 14px;
+  padding: 9px 11px;
+  border: 1px solid rgba(231, 131, 20, 0.35);
+  border-radius: 7px;
+  font-weight: normal;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-family: 'Inter', Arial, sans-serif;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+input[type="text"]:focus {
+  border-color: #e78314;
+  box-shadow: 0 0 0 3px rgba(231, 131, 20, 0.15);
+}
+
+body.options-body .primary-btn {
+  margin-top: 10px;
+}
+
+.saved-msg {
+  color: #7fbb6e;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 6px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
