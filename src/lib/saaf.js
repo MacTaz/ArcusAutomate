@@ -284,7 +284,7 @@ export async function fillSaaf(event, profile) {
 
   // ---- Signature names ----
   drawSignatureName(SIG_APPLICANT[0], SIG_APPLICANT[1], SIG_APPLICANT[2], profile.name);
-  drawSignatureName(SIG_ADVISER[0], SIG_ADVISER[1], SIG_ADVISER[2], event.adviserName);
+  drawSignatureName(SIG_ADVISER[0], SIG_ADVISER[1], SIG_ADVISER[2], event.adviserName || profile.adviserName || "");
 
   // ---- Checkboxes ----
   const activityType = (event.activityType || "").trim().toLowerCase();

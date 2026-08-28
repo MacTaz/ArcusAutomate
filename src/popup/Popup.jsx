@@ -4,12 +4,6 @@ import { fillAvr } from "../lib/avr.js";
 import { fillSaaf } from "../lib/saaf.js";
 import { PDFDocument } from "pdf-lib";
 
-const ORGANIZATION_ADVISER = {
-  name: "Renilda S. Layno",
-  position: "Organization Adviser",
-  organizationName: "AWS Student Builder Group - Arcus",
-};
-
 function getApplicantProfile() {
   return new Promise((resolve) => {
     if (typeof chrome !== "undefined" && chrome.storage) {
@@ -104,28 +98,38 @@ export default function Popup() {
         throw err;
       }
 
-      event.adviserName = ORGANIZATION_ADVISER.name;
+      event.adviserName = profile.adviserName || "";
+
+      const hasAvr = Boolean(
+        (event.avRoom && event.avRoom.trim()) ||
+        (event.avEquipment && event.avEquipment.length > 0)
+      );
 
       // Step 2: Fill AVR
-      setStatus({ msg: "Filling AVR form…", isError: false });
-      const avrBytes = await fillAvr(event, profile);
+      let avrBytes = null;
+      if (hasAvr) {
+        setStatus({ msg: "Filling AVR form…", isError: false });
+        avrBytes = await fillAvr(event, profile);
+      }
 
       // Step 3: Fill SAAF
       setStatus({ msg: "Filling SAAF form…", isError: false });
       const saafBytes = await fillSaaf(event, profile);
 
-      // Step 4: Merge Proposal + SAAF + AVR into master
+      // Step 4: Merge Proposal + SAAF (+ AVR if present) into master
       setStatus({ msg: "Merging master PDF…", isError: false });
       const masterDoc = await PDFDocument.create();
 
       const proposalBytes = await selectedFile.arrayBuffer();
-      const [propDoc, saafDoc, avrDoc] = await Promise.all([
-        PDFDocument.load(proposalBytes),
-        PDFDocument.load(saafBytes),
-        PDFDocument.load(avrBytes),
-      ]);
+      const docsToMerge = [
+        await PDFDocument.load(proposalBytes),
+        await PDFDocument.load(saafBytes),
+      ];
+      if (avrBytes) {
+        docsToMerge.push(await PDFDocument.load(avrBytes));
+      }
 
-      for (const doc of [propDoc, saafDoc, avrDoc]) {
+      for (const doc of docsToMerge) {
         const pages = await masterDoc.copyPages(doc, doc.getPageIndices());
         pages.forEach((p) => masterDoc.addPage(p));
       }
@@ -224,9 +228,11 @@ export default function Popup() {
 
       {results && (
         <div className="results">
-          <button className="secondary-btn" onClick={() => downloadBlob(results.avr, "AVR.pdf")}>
-            ⬇ Download AVR
-          </button>
+          {results.avr && (
+            <button className="secondary-btn" onClick={() => downloadBlob(results.avr, "AVR.pdf")}>
+              ⬇ Download AVR
+            </button>
+          )}
           <button className="secondary-btn" onClick={() => downloadBlob(results.saaf, "SAAF.pdf")}>
             ⬇ Download SAAF
           </button>
@@ -234,7 +240,7 @@ export default function Popup() {
             className="secondary-btn"
             onClick={() => downloadBlob(results.master, "Master.pdf")}
           >
-            ⬇ Download Master (Proposal + SAAF + AVR)
+            ⬇ Download Master ({results.avr ? "Proposal + SAAF + AVR" : "Proposal + SAAF"})
           </button>
         </div>
       )}

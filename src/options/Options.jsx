@@ -9,6 +9,7 @@ const FIELDS = [
   { name: "contactNo", label: "Contact No.", placeholder: "" },
   { name: "organizationName", label: "Organization Name", placeholder: "" },
   { name: "venue", label: "Default Venue", placeholder: "e.g. Mapúa University" },
+  { name: "adviserName", label: "Organization Adviser", placeholder: "e.g. Renilda S. Layno" },
 ];
 
 function getStorage(key) {
