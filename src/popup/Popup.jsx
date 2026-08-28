@@ -7,8 +7,14 @@ import { PDFDocument } from "pdf-lib";
 function getApplicantProfile() {
   return new Promise((resolve) => {
     if (typeof chrome !== "undefined" && chrome.storage) {
-      chrome.storage.sync.get("applicantProfile", (data) => {
-        resolve(data.applicantProfile || null);
+      chrome.storage.local.get("applicantProfile", (localData) => {
+        if (localData && localData.applicantProfile) {
+          resolve(localData.applicantProfile);
+        } else {
+          chrome.storage.sync.get("applicantProfile", (syncData) => {
+            resolve(syncData ? syncData.applicantProfile : null);
+          });
+        }
       });
     } else {
       // Fallback for dev mode

@@ -197,16 +197,12 @@ body.popup-body h1 {
   font-size: 13px;
   font-family: 'Inter', Arial, sans-serif;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  transition: border-color 0.15s, background 0.15s;
   text-align: left;
 }
 .secondary-btn:hover {
   border-color: #e78314;
   background: #1a2d45;
-  transform: translateX(2px);
-}
-.secondary-btn:active {
-  transform: translateX(0);
 }
 
 .link-btn {

@@ -166,6 +166,36 @@ export async function fillAvr(event, profile) {
     });
   }
 
+  // Draw signature image if present
+  if (profile.signatureImage) {
+    try {
+      const base64Str = profile.signatureImage.split(",")[1] || profile.signatureImage;
+      const binaryStr = atob(base64Str);
+      const imgBytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        imgBytes[i] = binaryStr.charCodeAt(i);
+      }
+      const isPng = profile.signatureImage.includes("image/png") || (imgBytes[0] === 0x89 && imgBytes[1] === 0x50);
+      const image = isPng ? await pdfDoc.embedPng(imgBytes) : await pdfDoc.embedJpg(imgBytes);
+
+      const sigSize = profile.signatureSize || profile.signatureWidth ? Number(profile.signatureSize || profile.signatureWidth) : 180;
+      const offsetY = profile.signatureOffsetY !== undefined && profile.signatureOffsetY !== "" ? Number(profile.signatureOffsetY) : 0;
+
+      const centerX = (41.4 + 243.36) / 2;
+      const scaled = image.scaleToFit(sigSize, sigSize * 0.6);
+      const imgY = sigY - (scaled.height / 2) + offsetY;
+
+      page.drawImage(image, {
+        x: centerX - scaled.width / 2,
+        y: imgY,
+        width: scaled.width,
+        height: scaled.height,
+      });
+    } catch (e) {
+      console.warn("[AVR] Failed to embed signature image:", e);
+    }
+  }
+
   const filledBytes = await pdfDoc.save();
   return filledBytes;
 }

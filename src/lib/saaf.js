@@ -286,6 +286,37 @@ export async function fillSaaf(event, profile) {
   drawSignatureName(SIG_APPLICANT[0], SIG_APPLICANT[1], SIG_APPLICANT[2], profile.name);
   drawSignatureName(SIG_ADVISER[0], SIG_ADVISER[1], SIG_ADVISER[2], event.adviserName || profile.adviserName || "");
 
+  // ---- Signature image ----
+  if (profile.signatureImage) {
+    try {
+      const base64Str = profile.signatureImage.split(",")[1] || profile.signatureImage;
+      const binaryStr = atob(base64Str);
+      const imgBytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        imgBytes[i] = binaryStr.charCodeAt(i);
+      }
+      const isPng = profile.signatureImage.includes("image/png") || (imgBytes[0] === 0x89 && imgBytes[1] === 0x50);
+      const image = isPng ? await pdfDoc.embedPng(imgBytes) : await pdfDoc.embedJpg(imgBytes);
+
+      const sigSize = profile.signatureSize || profile.signatureWidth ? Number(profile.signatureSize || profile.signatureWidth) : 180;
+      const offsetY = profile.signatureOffsetY !== undefined && profile.signatureOffsetY !== "" ? Number(profile.signatureOffsetY) : 0;
+
+      const centerX = (SIG_APPLICANT[0] + SIG_APPLICANT[1]) / 2;
+      const lineY = pageHeight - SIG_APPLICANT[2];
+      const scaled = image.scaleToFit(sigSize, sigSize * 0.6);
+      const imgY = lineY - (scaled.height / 2) + offsetY;
+
+      page.drawImage(image, {
+        x: centerX - scaled.width / 2,
+        y: imgY,
+        width: scaled.width,
+        height: scaled.height,
+      });
+    } catch (e) {
+      console.warn("[SAAF] Failed to embed signature image:", e);
+    }
+  }
+
   // ---- Checkboxes ----
   const activityType = (event.activityType || "").trim().toLowerCase();
   if (activityType.includes("extra")) {
