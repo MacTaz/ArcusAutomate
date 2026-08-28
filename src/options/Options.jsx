@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { computeSignatureDimensions } from "../lib/signaturePlacement.js";
 
 const FIELDS = [
   { name: "name", label: "Full Name", placeholder: "" },
   { name: "studentNumber", label: "Student Number", placeholder: "" },
-  { name: "programAndYear", label: "Program, Year & Section", placeholder: "e.g. BSCS - 3" },
+  { name: "programAndYear", label: "Program-Year", placeholder: "e.g. BSCS - 3" },
   { name: "position", label: "Position", placeholder: "e.g. Corporate Secretary" },
   { name: "department", label: "Department", placeholder: "e.g. SOIT" },
   { name: "contactNo", label: "Contact No.", placeholder: "" },
@@ -49,6 +50,19 @@ export default function Options() {
   const [signatureOffsetY, setSignatureOffsetY] = useState(0);
   const [saved, setSaved] = useState(false);
   const signatureInputRef = useRef(null);
+  // naturalDims holds the pixel dimensions of the uploaded signature image.
+  // Populated via the <img> onLoad handler so we can feed the exact same
+  // computeSignatureDimensions() call that the PDF embedders use.
+  const [naturalDims, setNaturalDims] = useState({ w: 1, h: 1 });
+
+  // The SAAF applicant signature line spans from x0=48.525 to x1=266.95 (pt).
+  // The preview container is 260 px wide, so this scale maps PDF pt → preview px.
+  const PDF_SIG_LINE_WIDTH_PT = 266.95 - 48.525; // 218.425 pt
+  const PREVIEW_CONTAINER_PX = 260;
+  const previewScale = PREVIEW_CONTAINER_PX / PDF_SIG_LINE_WIDTH_PT;
+
+  // Signature line sits at top=55px inside the 120px-tall preview container.
+  const PREVIEW_LINE_TOP_PX = 55;
 
   useEffect(() => {
     getStorage("applicantProfile").then((profile) => {
@@ -285,24 +299,39 @@ export default function Options() {
                     </div>
                   </div>
 
-                  {/* Signature Image Overlay centered on signature line */}
-                  {signatureImage && (
-                    <img
-                      src={signatureImage}
-                      alt="Live Signature Overlay"
-                      style={{
-                        position: "absolute",
-                        top: `${55 - Number(signatureOffsetY)}px`,
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
-                        maxWidth: `${signatureSize}px`,
-                        maxHeight: `${Math.round(signatureSize * 0.6)}px`,
-                        objectFit: "contain",
-                        pointerEvents: "none",
-                        zIndex: 3,
-                      }}
-                    />
-                  )}
+                  {/* Signature Image Overlay — dimensions derived from the same
+                      computeSignatureDimensions() formula used by the PDF embedders,
+                      scaled into preview-pixel space via previewScale. */}
+                  {signatureImage && (() => {
+                    const { width: pdfW, height: pdfH } = computeSignatureDimensions(
+                      signatureSize,
+                      naturalDims.w,
+                      naturalDims.h
+                    );
+                    const previewW = pdfW * previewScale;
+                    const previewH = pdfH * previewScale;
+                    // offsetY in PDF pts → preview px; positive = up (same sign as PDF)
+                    const previewOffsetY = Number(signatureOffsetY) * previewScale;
+                    return (
+                      <img
+                        src={signatureImage}
+                        alt="Live Signature Overlay"
+                        onLoad={(e) => setNaturalDims({ w: e.target.naturalWidth, h: e.target.naturalHeight })}
+                        style={{
+                          position: "absolute",
+                          // Centre vertically on the signature line, shifted by offsetY
+                          top: `${PREVIEW_LINE_TOP_PX - previewH / 2 - previewOffsetY}px`,
+                          left: "50%",
+                          transform: "translateX(-50%)",
+                          width: `${previewW}px`,
+                          height: `${previewH}px`,
+                          objectFit: "contain",
+                          pointerEvents: "none",
+                          zIndex: 3,
+                        }}
+                      />
+                    );
+                  })()}
                 </div>
               </div>
             </div>

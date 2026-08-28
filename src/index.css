@@ -1,11 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 /* ========== BASE ========== */
-html, body {
+html,
+body {
   font-family: 'Inter', Arial, sans-serif;
   margin: 0;
   padding: 0;
@@ -17,9 +20,9 @@ html, body {
 /* Chrome extension popup sizes to content; set it on html + body */
 body.popup-body,
 body.popup-body html {
-  width: 400px;
-  min-width: 400px;
-  max-width: 400px;
+  width: 320px;
+  min-width: 320px;
+  max-width: 320px;
 }
 
 /* ========== OPTIONS body ========== */
@@ -29,8 +32,8 @@ body.options-body {
 
 .container {
   padding: 20px;
-  width: 400px;
-  min-width: 400px;
+  width: 320px;
+  min-width: 320px;
 }
 
 /* OPTIONS container overrides */
@@ -72,6 +75,7 @@ body.popup-body h1 {
   margin-bottom: 14px;
   transition: color 0.15s;
 }
+
 .guidelines-link:hover {
   text-decoration: underline;
   color: #f5a623;
@@ -97,20 +101,24 @@ body.popup-body h1 {
   overflow: visible;
   user-select: none;
 }
+
 .drop-zone p {
   margin: 0;
   white-space: pre-line;
 }
+
 .drop-zone:hover {
   border-color: #e78314;
   background: #1a2d45;
   box-shadow: 0 0 0 3px rgba(231, 131, 20, 0.08);
 }
+
 .drop-zone.dragover {
   border-color: #e78314;
   background: rgba(231, 131, 20, 0.1);
   box-shadow: 0 0 0 4px rgba(231, 131, 20, 0.15);
 }
+
 .drop-zone.has-file {
   border-style: solid;
   border-color: #3a6a52;
@@ -125,7 +133,7 @@ body.popup-body h1 {
   width: 140px;
   pointer-events: none;
   z-index: 10;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
 }
 
 .remove-btn {
@@ -143,6 +151,7 @@ body.popup-body h1 {
   z-index: 11;
   transition: background 0.15s, color 0.15s;
 }
+
 .remove-btn:hover {
   background: rgba(220, 60, 60, 0.3);
   color: #ff7070;
@@ -174,13 +183,16 @@ body.popup-body h1 {
   transition: opacity 0.15s, transform 0.1s;
   letter-spacing: 0.01em;
 }
+
 .primary-btn:hover:not(:disabled) {
   opacity: 0.9;
   transform: translateY(-1px);
 }
+
 .primary-btn:active:not(:disabled) {
   transform: translateY(0);
 }
+
 .primary-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
@@ -200,6 +212,7 @@ body.popup-body h1 {
   transition: border-color 0.15s, background 0.15s;
   text-align: left;
 }
+
 .secondary-btn:hover {
   border-color: #e78314;
   background: #1a2d45;
@@ -215,6 +228,7 @@ body.popup-body h1 {
   padding: 0;
   transition: color 0.15s;
 }
+
 .link-btn:hover {
   color: #e78314;
 }
@@ -270,6 +284,7 @@ input[type="text"] {
   transition: border-color 0.15s, box-shadow 0.15s;
   outline: none;
 }
+
 input[type="text"]:focus {
   border-color: #e78314;
   box-shadow: 0 0 0 3px rgba(231, 131, 20, 0.15);
@@ -288,6 +303,13 @@ body.options-body .primary-btn {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

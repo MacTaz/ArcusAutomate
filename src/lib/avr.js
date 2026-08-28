@@ -6,6 +6,7 @@
  */
 
 import { PDFDocument, PDFName } from "pdf-lib";
+import { computeSignatureDimensions } from "./signaturePlacement.js";
 import { AVR_PDF_B64 } from "./templates.js";
 
 const ROOM_FIELD_MAP = {
@@ -49,6 +50,18 @@ const EQUIPMENT_FIELD_MAP = {
   Speaker: { checkbox: "Check Bo5", date: "Date NeededRow11", time: "Time NeededRow11" },
   Microphone: { checkbox: "Check Bo6", date: "Date NeededRow12", time: "Time NeededRow12" },
 };
+
+// AVR applicant signature line in PyMuPDF space: x0=41.4, x1=243.36, y=588.5
+const AVR_SIG_X0 = 41.4;
+const AVR_SIG_X1 = 243.36;
+const AVR_SIG_Y = 588.5; // PyMuPDF top-origin y of the baseline
+
+/**
+ * Distance (pt) from the signature line baseline up to the vertical
+ * centre of where the signature image should sit.
+ * Positive = above the line.
+ */
+const SIG_CENTER_OFFSET_PT = 14;
 
 function todayMMDDYYYY() {
   const d = new Date();
@@ -178,18 +191,26 @@ export async function fillAvr(event, profile) {
       const isPng = profile.signatureImage.includes("image/png") || (imgBytes[0] === 0x89 && imgBytes[1] === 0x50);
       const image = isPng ? await pdfDoc.embedPng(imgBytes) : await pdfDoc.embedJpg(imgBytes);
 
-      const sigSize = profile.signatureSize || profile.signatureWidth ? Number(profile.signatureSize || profile.signatureWidth) : 180;
-      const offsetY = profile.signatureOffsetY !== undefined && profile.signatureOffsetY !== "" ? Number(profile.signatureOffsetY) : 0;
+      const sigSize = Number(profile.signatureSize || profile.signatureWidth) || 180;
+      // positive offsetY = move image up on the page (same convention as the preview)
+      const offsetY = Number(profile.signatureOffsetY) || 0;
 
-      const centerX = (41.4 + 243.36) / 2;
-      const scaled = image.scaleToFit(sigSize, sigSize * 0.6);
-      const imgY = sigY - (scaled.height / 2) + offsetY;
+      const { width: imgW, height: imgH } = computeSignatureDimensions(
+        sigSize,
+        image.width,
+        image.height
+      );
+
+      const centerX = (AVR_SIG_X0 + AVR_SIG_X1) / 2;
+      const lineY = height - AVR_SIG_Y; // pdf-lib y of the signature line
+      // Centre the image SIG_CENTER_OFFSET_PT above the line, then apply user offset
+      const imgY = lineY + SIG_CENTER_OFFSET_PT - imgH / 2 + offsetY;
 
       page.drawImage(image, {
-        x: centerX - scaled.width / 2,
+        x: centerX - imgW / 2,
         y: imgY,
-        width: scaled.width,
-        height: scaled.height,
+        width: imgW,
+        height: imgH,
       });
     } catch (e) {
       console.warn("[AVR] Failed to embed signature image:", e);

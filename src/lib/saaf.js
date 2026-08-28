@@ -15,6 +15,7 @@
  */
 
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { computeSignatureDimensions } from "./signaturePlacement.js";
 import { SAAF_PDF_B64 } from "./templates.js";
 
 const FONT_SIZE = 9;
@@ -60,6 +61,13 @@ const FIELDS = {
 // Signature lines: [line_x0, line_x1, line_y] in PyMuPDF space
 const SIG_APPLICANT = [48.525, 266.95, 566.5];
 const SIG_ADVISER = [303.13, 521.50, 566.5];
+
+/**
+ * Distance (pt) from the signature line baseline up to the vertical
+ * centre of where the signature image should sit.
+ * Positive = above the line.
+ */
+const SIG_CENTER_OFFSET_PT = 14;
 
 function computeDay(dateStr) {
   if (!dateStr) return "";
@@ -298,19 +306,26 @@ export async function fillSaaf(event, profile) {
       const isPng = profile.signatureImage.includes("image/png") || (imgBytes[0] === 0x89 && imgBytes[1] === 0x50);
       const image = isPng ? await pdfDoc.embedPng(imgBytes) : await pdfDoc.embedJpg(imgBytes);
 
-      const sigSize = profile.signatureSize || profile.signatureWidth ? Number(profile.signatureSize || profile.signatureWidth) : 180;
-      const offsetY = profile.signatureOffsetY !== undefined && profile.signatureOffsetY !== "" ? Number(profile.signatureOffsetY) : 0;
+      const sigSize = Number(profile.signatureSize || profile.signatureWidth) || 180;
+      // positive offsetY = move image up on the page (same convention as the preview)
+      const offsetY = Number(profile.signatureOffsetY) || 0;
+
+      const { width: imgW, height: imgH } = computeSignatureDimensions(
+        sigSize,
+        image.width,
+        image.height
+      );
 
       const centerX = (SIG_APPLICANT[0] + SIG_APPLICANT[1]) / 2;
-      const lineY = pageHeight - SIG_APPLICANT[2];
-      const scaled = image.scaleToFit(sigSize, sigSize * 0.6);
-      const imgY = lineY - (scaled.height / 2) + offsetY;
+      const lineY = pageHeight - SIG_APPLICANT[2]; // pdf-lib y of the signature line
+      // Centre the image SIG_CENTER_OFFSET_PT above the line, then apply user offset
+      const imgY = lineY + SIG_CENTER_OFFSET_PT - imgH / 2 + offsetY;
 
       page.drawImage(image, {
-        x: centerX - scaled.width / 2,
+        x: centerX - imgW / 2,
         y: imgY,
-        width: scaled.width,
-        height: scaled.height,
+        width: imgW,
+        height: imgH,
       });
     } catch (e) {
       console.warn("[SAAF] Failed to embed signature image:", e);
