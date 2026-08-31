@@ -24,18 +24,34 @@ function getApplicantProfile() {
   });
 }
 
+function sanitizeFilename(filename) {
+  if (!filename) return "Document.pdf";
+  return filename
+    .replace(/[/\\?%*:|"<>]/g, "")
+    .replace(/[\r\n\t]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function downloadBlob(bytes, filename) {
+  const cleanName = sanitizeFilename(filename);
   const blob = new Blob([bytes], { type: "application/pdf" });
   const url = URL.createObjectURL(blob);
-  if (typeof chrome !== "undefined" && chrome.downloads) {
-    chrome.downloads.download({ url, filename, saveAs: false });
-  } else {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = cleanName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+function formatFileName(originalFileName, type) {
+  const rawBase = originalFileName ? originalFileName.replace(/\.[^/.]+$/, "").trim() : "Document";
+  const cleanBase = sanitizeFilename(rawBase) || "Document";
+  const tagMap = { avr: "AVR", saaf: "SAAF", master: "Master" };
+  const tag = tagMap[type.toLowerCase()] || type;
+  return `${cleanBase} - ${tag}.pdf`;
 }
 
 export default function Popup() {
@@ -43,7 +59,7 @@ export default function Popup() {
   const [isDragging, setIsDragging] = useState(false);
   const [status, setStatus] = useState(null); // { msg, isError }
   const [isGenerating, setIsGenerating] = useState(false);
-  const [results, setResults] = useState(null); // { avr, saaf, master }
+  const [results, setResults] = useState(null); // { avr, saaf, master, fileNames }
   const fileInputRef = useRef(null);
 
   function handleFile(file) {
@@ -141,7 +157,13 @@ export default function Popup() {
       }
       const masterBytes = await masterDoc.save();
 
-      setResults({ avr: avrBytes, saaf: saafBytes, master: masterBytes });
+      const fileNames = {
+        avr: formatFileName(selectedFile.name, "avr"),
+        saaf: formatFileName(selectedFile.name, "saaf"),
+        master: formatFileName(selectedFile.name, "master"),
+      };
+
+      setResults({ avr: avrBytes, saaf: saafBytes, master: masterBytes, fileNames });
       setStatus({ msg: "✓ Done. Download your documents below.", isError: false });
     } catch (err) {
       console.error(err);
@@ -235,16 +257,22 @@ export default function Popup() {
       {results && (
         <div className="results">
           {results.avr && (
-            <button className="secondary-btn" onClick={() => downloadBlob(results.avr, "AVR.pdf")}>
+            <button
+              className="secondary-btn"
+              onClick={() => downloadBlob(results.avr, results.fileNames.avr)}
+            >
               ⬇ Download AVR
             </button>
           )}
-          <button className="secondary-btn" onClick={() => downloadBlob(results.saaf, "SAAF.pdf")}>
+          <button
+            className="secondary-btn"
+            onClick={() => downloadBlob(results.saaf, results.fileNames.saaf)}
+          >
             ⬇ Download SAAF
           </button>
           <button
             className="secondary-btn"
-            onClick={() => downloadBlob(results.master, "Master.pdf")}
+            onClick={() => downloadBlob(results.master, results.fileNames.master)}
           >
             ⬇ Download Master ({results.avr ? "Proposal + SAAF + AVR" : "Proposal + SAAF"})
           </button>
